@@ -1,0 +1,3 @@
+class Agent:
+    def make_move(self, input_board: list[list[int]]) -> tuple[int, int]:
+        ...
