@@ -93,13 +93,13 @@ def place_ships(ships: tuple[Ship]) -> (
 
     for ship in ships:
         for box in ship.get_boxes():
-            if ship.box[0] >= LONGITUD or ship.box[1] >= ALTURA:
+            if box[0] >= LONGITUD or box[1] >= ALTURA:
                 raise ValueError("El barco se sale del tablero.")
 
-            result = boxes.get((ship.box[0], ship.box[1]))
+            result = boxes.get(box)
 
             if result is None:
-                boxes[(ship.box[0], ship.box[1])] = ship
+                boxes[box] = ship
             else:
                 raise ValueError("Hay empalme entre barcos.")
         placed_ships.append(ship)
