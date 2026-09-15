@@ -1,5 +1,5 @@
-from src.agents.agent import Agent
-from src.gamelogic.board import Board
+from agents.agent import Agent
+from gamelogic.board import Board, HitResult
 
 class Player:
     def __init__(self, agent: Agent, board: Board) -> None:
@@ -12,3 +12,5 @@ class Player:
     def get_matrix_board(self) -> list[list[str]]:
         return self.board.get_matrix_board()
 
+    def take_move(self, input_coords: tuple[int, int]) -> HitResult:
+        return self.board.take_move(input_coords)
