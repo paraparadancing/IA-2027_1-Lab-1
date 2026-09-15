@@ -23,15 +23,29 @@ class Board:
     def take_move(self, input_coords: tuple[int, int]) -> HitResult:
         hit_result = self.used_boxes.get(input_coords)
         if hit_result is None:
+            self.mark_missed_box(input_coords)
             return HitResult.MISS
         else:
             self.used_boxes.pop(input_coords)
             hit_result.take_impact()
             if hit_result.is_destroyed():
+                self.mark_sunken_ship(hit_result)
                 self.afloat_ships.remove(hit_result)
                 if len(self.afloat_ships) == 0:
                     return HitResult.DEFEAT
+            else:
+                self.mark_hit_box(input_coords)
             return HitResult.HIT
+    
+    def mark_missed_box(self, input_coords: tuple[int, int]) -> None:
+        self.matrix_board[input_coords[0]][input_coords[1]] = 'X'
+
+    def mark_hit_box(self, input_coords: tuple[int, int]) -> None:
+        self.matrix_board[input_coords[0]][input_coords[1]] = 'O'
+
+    def mark_sunken_ship(self, input_ship: Ship) -> None:
+        for box in input_ship.get_boxes():
+            self.matrix_board[box[0]][box[1]] = 'H'
 
 class Ship:
     def __init__(self, length: int, width: int, position: tuple[int, int]) -> None:
