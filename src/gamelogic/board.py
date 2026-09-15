@@ -1,3 +1,5 @@
+from enum import Enum, auto
+
 LONGITUD = 10
 ALTURA   = 10
 
@@ -17,6 +19,19 @@ class Board:
 
     def get_matrix_board(self) -> list[list[str]]:
         return self.matrix_board
+    
+    def take_move(self, input_coords: tuple[int, int]) -> HitResult:
+        hit_result = self.used_boxes.get(input_coords)
+        if hit_result is None:
+            return HitResult.MISS
+        else:
+            self.used_boxes.pop(input_coords)
+            hit_result.take_impact()
+            if hit_result.is_destroyed():
+                self.afloat_ships.remove(hit_result)
+                if len(self.afloat_ships) == 0:
+                    return HitResult.DEFEAT
+            return HitResult.HIT
 
 class Ship:
     def __init__(self, length: int, width: int, position: tuple[int, int]) -> None:
@@ -29,7 +44,9 @@ class Ship:
             self.width = width
         else:
             raise ValueError("La amplitud de barco debe ser mayor a 0.")
-        
+
+        self.remaining_cells = length * width
+
         if all(position) >= 0:
             self.position = position
         else:
@@ -43,6 +60,17 @@ class Ship:
 
     def get_width(self) -> int:
         return self.width
+
+    def take_impact(self) -> None:
+        self.remaining_cells -= 1
+
+    def is_destroyed(self) -> bool:
+        return self.remaining_cells <= 0
+
+class HitResult(Enum):
+    MISS = auto()
+    HIT = auto()
+    DEFEAT = auto()
 
 def place_ships(ships: tuple[Ship]) -> (
         tuple[dict[tuple[int, int], Ship], list[Ship]]
