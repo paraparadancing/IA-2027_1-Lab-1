@@ -47,19 +47,17 @@ class Ship:
 
         self.remaining_cells = length * width
 
-        if all(position) >= 0:
+        if all(coord >= 0 for coord in position):
             self.position = position
         else:
             raise ValueError("Las coordenadas deben ser iguales o mayores a 0.")
 
-    def get_position(self) -> tuple[int, int]:
-        return self.position
-    
-    def get_length(self) -> int:
-        return self.length
+        self.boxes = tuple(
+            (position[0] + w, position[1] + l) for w in range(width) for l in range(length)
+        )
 
-    def get_width(self) -> int:
-        return self.width
+    def get_boxes(self) -> tuple[tuple[int, int]]:
+        return self.boxes
 
     def take_impact(self) -> None:
         self.remaining_cells -= 1
@@ -79,20 +77,16 @@ def place_ships(ships: tuple[Ship]) -> (
     placed_ships: list[Ship] = list()
 
     for ship in ships:
-        for w in range(ship.get_width()):
-            for l in range(ship.get_length()):
-                target_x = ship.get_position()[0] + w
-                target_y = ship.get_position()[1] + l
+        for box in ship.get_boxes():
+            if ship.box[0] >= LONGITUD or ship.box[1] >= ALTURA:
+                raise ValueError("El barco se sale del tablero.")
 
-                if target_x >= LONGITUD or target_y >= ALTURA:
-                    raise ValueError("El barco se sale del tablero.")
+            result = boxes.get((ship.box[0], ship.box[1]))
 
-                result = boxes.get((target_x, target_y))
-
-                if result is None:
-                    boxes[(target_x, target_y)] = ship
-                    placed_ships.append(ship)
-                else:
-                    raise ValueError("Hay empalme entre barcos.")
+            if result is None:
+                boxes[(ship.box[0], ship.box[1])] = ship
+            else:
+                raise ValueError("Hay empalme entre barcos.")
+        placed_ships.append(ship)
 
     return boxes, placed_ships
