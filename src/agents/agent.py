@@ -27,9 +27,8 @@ class SimpleReflexAgent(Agent):
         validos = []
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < self.cols and 0 <= ny < self.rows:
-                if board[nx][ny] is None:
-                    validos.append((nx, ny))
+            if 0 <= nx < self.cols and 0 <= ny < self.rows and board[nx][ny] is None:
+                validos.append((nx, ny))
         return validos
 
     def _random_shot(self, board):
@@ -37,7 +36,7 @@ class SimpleReflexAgent(Agent):
         return random.choice(opciones) if opciones else (0,0)
 
 # ==========================================
-# 2. AGENTE BASADO EN OBJETIVOS
+# 2. AGENTE BASADO EN OBJETIVOS (CORREGIDO)
 # ==========================================
 class GoalBasedAgent(Agent):
     def __init__(self, cols=10, rows=10):
@@ -53,31 +52,50 @@ class GoalBasedAgent(Agent):
 
         if impactos_activos:
             if len(impactos_activos) > 1:
-                return self._continue_line(impactos_activos, input_matrix_board)
-            else:
-                x, y = impactos_activos[0]
-                return self._get_valid_neighbor(x, y, input_matrix_board)
+                # Intentar continuar una línea si encontramos impactos adyacentes
+                jugada_linea = self._continue_line(impactos_activos, input_matrix_board)
+                if jugada_linea:
+                    return jugada_linea
+            
+            # Plan de respaldo: Revisamos vecinos de TODOS los impactos activos.
+            for x, y in impactos_activos:
+                jugada_vecino = self._get_valid_neighbor(x, y, input_matrix_board)
+                if jugada_vecino:
+                    return jugada_vecino
         
+        # Modo Búsqueda (Ajedrez)
         return self._checkerboard_shot(input_matrix_board)
 
     def _continue_line(self, hits, board):
-        p1, p2 = hits[0], hits[1]
-        es_horizontal = (p1[1] == p2[1])
-
-        for x, y in hits:
-            direcciones = [(-1, 0), (1, 0)] if es_horizontal else [(0, -1), (0, 1)]
-            for dx, dy in direcciones:
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < self.cols and 0 <= ny < self.rows and board[nx][ny] is None:
-                    return (nx, ny)
-        return self._get_valid_neighbor(hits[0][0], hits[0][1], board)
+        # Buscar dos impactos que estén literalmente pegados para confirmar dirección
+        for i in range(len(hits)):
+            for j in range(i + 1, len(hits)):
+                p1, p2 = hits[i], hits[j]
+                
+                # Comprobar si son vecinos adyacentes (distancia de 1)
+                if abs(p1[0] - p2[0]) + abs(p1[1] - p2[1]) == 1:
+                    es_horizontal = (p1[1] == p2[1])
+                    direcciones = [(-1, 0), (1, 0)] if es_horizontal else [(0, -1), (0, 1)]
+                    
+                    # Recorrer la línea descubierta hacia ambos lados
+                    for dx, dy in direcciones:
+                        nx, ny = p1[0], p1[1]
+                        while 0 <= nx < self.cols and 0 <= ny < self.rows:
+                            if board[nx][ny] == 'O':
+                                nx += dx # Seguir avanzando por el cuerpo del barco
+                                ny += dy
+                            elif board[nx][ny] is None:
+                                return (nx, ny) # Disparar a la orilla descubierta
+                            else:
+                                break # Chocamos con 'X' o 'H', esta dirección está bloqueada
+        return None
 
     def _get_valid_neighbor(self, x, y, board):
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
             if 0 <= nx < self.cols and 0 <= ny < self.rows and board[nx][ny] is None:
                 return (nx, ny)
-        return self._checkerboard_shot(board)
+        return None
 
     def _checkerboard_shot(self, board):
         opciones = [(x, y) for x in range(self.cols) for y in range(self.rows) 
@@ -87,7 +105,7 @@ class GoalBasedAgent(Agent):
         return random.choice(opciones) if opciones else (0,0)
 
 # ==========================================
-# 3. AGENTE ÓPTIMO (PDF)
+# 3. AGENTE ÓPTIMO PDF (CORREGIDO)
 # ==========================================
 class OptimalPDFAgent(Agent):
     def __init__(self, cols=10, rows=10):
@@ -111,7 +129,7 @@ class OptimalPDFAgent(Agent):
 
     def _evaluate_position(self, board, heatmap, start_x, start_y, longitud, horizontal):
         casillas_implicadas = []
-        atraviesa_impacto = False
+        impactos_cruzados = 0
 
         for i in range(longitud):
             cx = start_x + i if horizontal else start_x
@@ -119,16 +137,24 @@ class OptimalPDFAgent(Agent):
             estado = board[cx][cy]
             
             if estado in ['X', 'H']: 
-                return
+                return # Posición bloqueada
             if estado == 'O':
-                atraviesa_impacto = True
+                impactos_cruzados += 1 # Contamos exactamente cuántos impactos toca
             
             casillas_implicadas.append((cx, cy))
 
-        peso = 50 if atraviesa_impacto else 1
+        # MATEMÁTICA CORREGIDA: Escala exponencial
+        peso = 1
+        if impactos_cruzados > 0:
+            peso = 50 ** impactos_cruzados
+
         for cx, cy in casillas_implicadas:
             if board[cx][cy] is None:
-                heatmap[cx][cy] += peso
+                # Si no hay impactos cruzados, damos prioridad a casillas par (Ajedrez)
+                if impactos_cruzados == 0 and (cx + cy) % 2 == 0:
+                    heatmap[cx][cy] += (peso * 1.5)
+                else:
+                    heatmap[cx][cy] += peso
 
     def _get_max_coordinate(self, heatmap, board):
         max_utilidad = -1
