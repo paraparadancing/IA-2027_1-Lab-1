@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QApplication, QWidget, QGridLayout,
     QPushButton, QLabel, QVBoxLayout, QHBoxLayout,
-    QMessageBox
+    QMessageBox, QComboBox, QGroupBox, QFormLayout
 )
 from PySide6.QtCore import Qt, Signal
 import sys
@@ -199,7 +199,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Battleship")
+        self.setWindowTitle("Battleship - AI")
 
         main_layout = QVBoxLayout()
 
@@ -215,10 +215,49 @@ class MainWindow(QWidget):
         main_layout.addWidget(title)
 
         # ----------------------------------------------------
+        # PANEL DE CONTROL DE INTELIGENCIA ARTIFICIAL
+        # ----------------------------------------------------
+        control_group = QGroupBox("AI Laboratory Options")
+        control_layout = QHBoxLayout()
+
+        # IA Player A
+        form_a = QFormLayout()
+        self.combo_a = QComboBox()
+        self.combo_a.addItems(["Simple reflex agent", "Goal-based agent", "Optimal performance agent"])
+        self.combo_a.setCurrentIndex(1)
+        form_a.addRow("Player A Model:", self.combo_a)
+        
+        # IA Player B
+        form_b = QFormLayout()
+        self.combo_b = QComboBox()
+        self.combo_b.addItems(["Simple reflex agent", "Goal-based agent", "Optimal performance agent"])
+        self.combo_b.setCurrentIndex(2)
+        form_b.addRow("Player B Model:", self.combo_b)
+
+        control_layout.addLayout(form_a)
+        control_layout.addLayout(form_b)
+        control_group.setLayout(control_layout)
+        
+        main_layout.addWidget(control_group)
+
+        # ----------------------------------------------------
+        # BOTONES DE SIMULACIÓN
+        # ----------------------------------------------------
+        sim_buttons_layout = QHBoxLayout()
+        
+        self.btn_normal = QPushButton("▶ Start Visual Match")
+        self.btn_simular = QPushButton("⚡ Simulate 100 Matches")
+        
+        sim_buttons_layout.addWidget(self.btn_normal)
+        sim_buttons_layout.addWidget(self.btn_simular)
+        
+        main_layout.addLayout(sim_buttons_layout)
+
+        # ----------------------------------------------------
         # MENSAJE DE ESTADO
         # ----------------------------------------------------
         self.status_label = QLabel(
-            "Juego preparado"
+            "Game ready. Choose a mode."
         )
 
         self.status_label.setAlignment(
@@ -230,17 +269,28 @@ class MainWindow(QWidget):
         )
 
         # ----------------------------------------------------
+        # ETIQUETA DE ESTADÍSTICAS
+        # ----------------------------------------------------
+        self.lbl_stats = QLabel("")
+        self.lbl_stats.setAlignment(Qt.AlignCenter)
+        self.lbl_stats.setStyleSheet("font-weight: bold; color: green;")
+        
+        main_layout.addWidget(
+            self.lbl_stats
+        )
+
+        # ----------------------------------------------------
         # CONTENEDOR DE LOS DOS TABLEROS
         # ----------------------------------------------------
         boards_layout = QHBoxLayout()
 
         # ==============================
-        # TABLERO PROPIO
+        # TABLERO PROPIO (Player A)
         # ==============================
         own_layout = QVBoxLayout()
 
         own_title = QLabel(
-            "TABLERO PROPIO"
+            "OWN BOARD (Player A)"
         )
 
         own_title.setAlignment(
@@ -261,12 +311,12 @@ class MainWindow(QWidget):
         )
 
         # ==============================
-        # TABLERO ENEMIGO
+        # TABLERO ENEMIGO (Player B)
         # ==============================
         enemy_layout = QVBoxLayout()
 
         enemy_title = QLabel(
-            "TABLERO ENEMIGO"
+            "ENEMY BOARD (Player B)"
         )
 
         enemy_title.setAlignment(
@@ -278,7 +328,7 @@ class MainWindow(QWidget):
         )
 
         self.enemy_board = BoardWidget(
-            interactive=True
+            interactive=False
         )
 
         enemy_layout.addWidget(
@@ -299,16 +349,16 @@ class MainWindow(QWidget):
         )
 
         # ----------------------------------------------------
-        # BOTONES
+        # BOTONES ORIGINALES
         # ----------------------------------------------------
         buttons = QHBoxLayout()
 
         self.restart_button = QPushButton(
-            "Reiniciar"
+            "Stop / Restart"
         )
 
         self.exit_button = QPushButton(
-            "Salir"
+            "Exit"
         )
 
         buttons.addWidget(
@@ -327,17 +377,14 @@ class MainWindow(QWidget):
         # CONECTAR BOTONES
         # ----------------------------------------------------
 
-        # Reiniciar partida.
-        self.restart_button.clicked.connect(
-            self.restart_game
-        )
+        # (La lógica de conectar los nuevos botones se hace en main.py)
 
         # Cerrar programa.
         self.exit_button.clicked.connect(
             self.close
         )
 
-        # Detectar clic en tablero enemigo.
+        # Detectar clic en tablero enemigo (por si juegas contra IA luego).
         self.enemy_board.cell_clicked.connect(
             self.enemy_cell_clicked
         )
@@ -360,7 +407,7 @@ class MainWindow(QWidget):
         number = col + 1
 
         self.status_label.setText(
-            f"Casilla seleccionada: "
+            f"Selected cell: "
             f"{letter}{number}"
         )
 
@@ -379,11 +426,11 @@ class MainWindow(QWidget):
         self.enemy_board.reset_board()
 
         self.status_label.setText(
-            "Juego reiniciado"
+            "Game restarted"
         )
 
-        # Después aquí también se llamará
-        # al reinicio de Game.
+        # Borrar también las estadísticas.
+        self.lbl_stats.setText("")
 
     # ========================================================
     # CAMBIAR TEXTO DE ESTADO
@@ -401,8 +448,8 @@ class MainWindow(QWidget):
 
         QMessageBox.information(
             self,
-            "Fin de la partida",
-            f"Ganador: {winner}"
+            "Game Over",
+            f"Winner: {winner}"
         )
 
         # Bloquear tableros al terminar.

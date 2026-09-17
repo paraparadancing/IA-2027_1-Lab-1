@@ -2,7 +2,6 @@ from gamelogic.player import Player
 from gamelogic.board import HitResult
 
 class Game:
-    ...
     def __init__(self, player_a: Player, player_b: Player) -> None:
         self.player_a = player_a
         self.player_b = player_b
@@ -19,7 +18,10 @@ class Game:
 
     def take_next_move(self) -> bool:
         opponent_matrix = self.opponent_player.get_matrix_board()
-        attack_cords = self.player_a.make_move(opponent_matrix)
+        
+        # Corrección: Utilizar current_player en lugar de player_a fijo
+        attack_cords = self.current_player.make_move(opponent_matrix)
+        
         attack_result = self.opponent_player.take_move(attack_cords)
 
         match attack_result:
