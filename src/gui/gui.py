@@ -223,35 +223,64 @@ class MainWindow(QWidget):
         # IA Player A
         form_a = QFormLayout()
         self.combo_a = QComboBox()
-        self.combo_a.addItems(["Simple reflex agent", "Goal-based agent", "Optimal performance agent"])
+        self.combo_a.addItems([
+            "Simple reflex agent",
+            "Goal-based agent",
+            "Optimal performance agent"
+        ])
         self.combo_a.setCurrentIndex(1)
         form_a.addRow("Player A Model:", self.combo_a)
-        
+
         # IA Player B
         form_b = QFormLayout()
         self.combo_b = QComboBox()
-        self.combo_b.addItems(["Simple reflex agent", "Goal-based agent", "Optimal performance agent"])
+        self.combo_b.addItems([
+            "Simple reflex agent",
+            "Goal-based agent",
+            "Optimal performance agent"
+        ])
         self.combo_b.setCurrentIndex(2)
         form_b.addRow("Player B Model:", self.combo_b)
 
         control_layout.addLayout(form_a)
         control_layout.addLayout(form_b)
         control_group.setLayout(control_layout)
-        
+
         main_layout.addWidget(control_group)
 
         # ----------------------------------------------------
         # BOTONES DE SIMULACIÓN
         # ----------------------------------------------------
         sim_buttons_layout = QHBoxLayout()
-        
-        self.btn_normal = QPushButton("▶ Start Visual Match")
-        self.btn_simular = QPushButton("⚡ Simulate 100 Matches")
-        
-        sim_buttons_layout.addWidget(self.btn_normal)
-        sim_buttons_layout.addWidget(self.btn_simular)
-        
-        main_layout.addLayout(sim_buttons_layout)
+
+        self.btn_normal = QPushButton(
+            "▶ Start Visual Match"
+        )
+
+        # NUEVO: modo humano contra IA
+        self.btn_humano = QPushButton(
+            "👤 Play Against AI"
+        )
+
+        self.btn_simular = QPushButton(
+            "⚡ Simulate 100 Matches"
+        )
+
+        sim_buttons_layout.addWidget(
+            self.btn_normal
+        )
+
+        sim_buttons_layout.addWidget(
+            self.btn_humano
+        )
+
+        sim_buttons_layout.addWidget(
+            self.btn_simular
+        )
+
+        main_layout.addLayout(
+            sim_buttons_layout
+        )
 
         # ----------------------------------------------------
         # MENSAJE DE ESTADO
@@ -273,8 +302,10 @@ class MainWindow(QWidget):
         # ----------------------------------------------------
         self.lbl_stats = QLabel("")
         self.lbl_stats.setAlignment(Qt.AlignCenter)
-        self.lbl_stats.setStyleSheet("font-weight: bold; color: green;")
-        
+        self.lbl_stats.setStyleSheet(
+            "font-weight: bold; color: green;"
+        )
+
         main_layout.addWidget(
             self.lbl_stats
         )
@@ -384,7 +415,7 @@ class MainWindow(QWidget):
             self.close
         )
 
-        # Detectar clic en tablero enemigo (por si juegas contra IA luego).
+        # Detectar clic en tablero enemigo.
         self.enemy_board.cell_clicked.connect(
             self.enemy_cell_clicked
         )

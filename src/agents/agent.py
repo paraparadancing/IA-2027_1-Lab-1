@@ -15,25 +15,44 @@ class SimpleReflexAgent(Agent):
         self.rows = rows
 
     def make_move(self, input_matrix_board: list[list[str]]) -> tuple[int, int]:
+        candidatos = set()
+
+        # Buscar todos los impactos registrados
         for x in range(self.cols):
             for y in range(self.rows):
                 if input_matrix_board[x][y] == 'O':
                     vecinos = self._get_valid_neighbors(x, y, input_matrix_board)
-                    if vecinos:
-                        return random.choice(vecinos)
+                    candidatos.update(vecinos)
+
+        # Si existe algún vecino disponible de un impacto,
+        # elegir uno al azar.
+        if candidatos:
+            return random.choice(list(candidatos))
+
+        # Si no hay impactos activos, disparar al azar.
         return self._random_shot(input_matrix_board)
 
     def _get_valid_neighbors(self, x, y, board):
         validos = []
+
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < self.cols and 0 <= ny < self.rows and board[nx][ny] is None:
-                validos.append((nx, ny))
+
+            if 0 <= nx < self.cols and 0 <= ny < self.rows:
+                if board[nx][ny] is None:
+                    validos.append((nx, ny))
+
         return validos
 
     def _random_shot(self, board):
-        opciones = [(x, y) for x in range(self.cols) for y in range(self.rows) if board[x][y] is None]
-        return random.choice(opciones) if opciones else (0,0)
+        opciones = [
+            (x, y)
+            for x in range(self.cols)
+            for y in range(self.rows)
+            if board[x][y] is None
+        ]
+
+        return random.choice(opciones) if opciones else (0, 0)
 
 # ==========================================
 # 2. AGENTE BASADO EN OBJETIVOS (CORREGIDO)

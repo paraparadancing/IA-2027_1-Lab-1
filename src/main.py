@@ -5,7 +5,7 @@ from PySide6.QtCore import QTimer
 
 # Importaciones de tu proyecto
 from gui.gui import MainWindow
-from gamelogic.board import Board, Ship
+from gamelogic.board import Board, Ship, HitResult
 from gamelogic.player import Player
 from gamelogic.game import Game
 from agents.agent import SimpleReflexAgent, GoalBasedAgent, OptimalPDFAgent
@@ -15,26 +15,51 @@ class GameController:
         self.window = window
         self.timer = QTimer()
         self.timer.timeout.connect(self.play_turn)
+
+        # Variables para el modo humano
+        self.human_board = None
+        self.ai_player = None
+        self.human_fleet = None
+        self.human_attacks = set()
+        self.human_game_active = False
+        self.ai_turn_pending = False
         
         # Conectar los botones de la GUI
         self.window.btn_normal.clicked.connect(self.start_normal_match)
+        self.window.btn_humano.clicked.connect(self.start_human_match)
         self.window.btn_simular.clicked.connect(self.run_simulation)
         self.window.restart_button.clicked.connect(self.stop_and_reset)
+
+        # Detectar cuando el jugador humano presiona una casilla.
+        self.window.enemy_board.cell_clicked.connect(
+            self.human_cell_clicked
+        )
 
     def stop_and_reset(self):
         """Detiene cualquier partida en curso y limpia los tableros."""
         self.timer.stop()
+
+        self.human_game_active = False
+        self.ai_turn_pending = False
+        self.human_board = None
+        self.ai_player = None
+        self.human_fleet = None
+        self.human_attacks = set()
+
+        self.window.enemy_board.set_enabled(False)
+
         self.window.restart_game()
         self.window.update_status("Partida detenida. Elige un modo para comenzar.")
 
     def _get_agent_instance(self, agent_name: str):
-        """Devuelve una nueva instancia del agente seleccionado en el ComboBox."""
-        if agent_name == "IA Reactiva":
+        if agent_name == "Simple reflex agent":
             return SimpleReflexAgent()
-        elif agent_name == "IA por Objetivos":
+        elif agent_name == "Goal-based agent":
             return GoalBasedAgent()
-        else:
+        elif agent_name == "Optimal performance agent":
             return OptimalPDFAgent()
+        else:
+            raise ValueError(f"Agente no reconocido: {agent_name}")
 
     def _get_random_fleet(self):
         """Genera una flota aleatoria para dar variabilidad a la IA en las simulaciones."""
@@ -62,6 +87,11 @@ class GameController:
     def start_normal_match(self):
         """Inicia el modo visual."""
         self.timer.stop()
+
+        self.human_game_active = False
+        self.ai_turn_pending = False
+        self.window.enemy_board.set_enabled(False)
+
         self.setup_match()
         self.window.restart_game()
         self.render_boards()
@@ -83,6 +113,10 @@ class GameController:
     def run_simulation(self):
         """Simula 100 partidas sin gráficos para análisis estadístico."""
         self.timer.stop()
+        self.human_game_active = False
+        self.ai_turn_pending = False
+        self.window.enemy_board.set_enabled(False)
+
         self.window.update_status("Simulando 100 partidas... por favor espera.")
         QApplication.processEvents()
         
@@ -109,6 +143,229 @@ class GameController:
         
         self.window.update_status("Simulación finalizada.")
         QMessageBox.information(self.window, "Análisis Estadístico", resultado_txt)
+
+    # ========================================================
+    # MODO HUMANO CONTRA IA
+    # ========================================================
+    def start_human_match(self):
+        """Inicia una partida donde el usuario juega contra la IA."""
+        self.timer.stop()
+
+        # Activar el modo humano.
+        self.human_game_active = True
+        self.ai_turn_pending = False
+        self.human_attacks = set()
+
+        # Crear el tablero y la flota del jugador humano.
+        self.human_fleet = self._get_random_fleet()
+        self.human_board = Board(self.human_fleet)
+
+        # Crear el tablero de la IA.
+        ai_board = Board(self._get_random_fleet())
+
+        # Player B será la IA seleccionada en la interfaz.
+        ai_agent = self._get_agent_instance(
+            self.window.combo_b.currentText()
+        )
+
+        self.ai_player = Player(
+            ai_agent,
+            ai_board
+        )
+
+        # Reiniciar la interfaz.
+        self.window.restart_game()
+
+        # Mostrar los barcos del jugador humano.
+        self.render_human_board()
+
+        # El tablero enemigo empieza habilitado porque
+        # el jugador humano tiene el primer turno.
+        self.window.enemy_board.set_enabled(True)
+
+        self.window.update_status(
+            f"Modo Humano: Tú juegas contra "
+            f"{self.window.combo_b.currentText()}. "
+            f"Selecciona una casilla enemiga."
+        )
+
+    def human_cell_clicked(self, row, col):
+        """Procesa el disparo realizado por el jugador humano."""
+
+        # Si no estamos en una partida humana, ignorar el clic.
+        if not self.human_game_active:
+            return
+
+        # Evitar que el jugador dispare mientras la IA está jugando.
+        if self.ai_turn_pending:
+            return
+
+        coordinates = (row, col)
+
+        # Evitar disparar dos veces sobre la misma casilla.
+        if coordinates in self.human_attacks:
+            self.window.update_status(
+                "Esa casilla ya fue atacada. Selecciona otra."
+            )
+            return
+
+        # Registrar el disparo.
+        self.human_attacks.add(coordinates)
+
+        # Realizar el ataque sobre el tablero de la IA.
+        attack_result = self.ai_player.take_move(coordinates)
+
+        # Actualizar visualmente el tablero enemigo.
+        self.render_human_enemy_board()
+
+        # Si todos los barcos de la IA fueron destruidos,
+        # el jugador humano gana.
+        if attack_result == HitResult.DEFEAT:
+            self.human_game_active = False
+            self.ai_turn_pending = False
+            self.window.enemy_board.set_enabled(False)
+
+            self.window.update_status(
+                "¡Terminaste con toda la flota enemiga!"
+            )
+
+            self.window.show_winner("Tú")
+            return
+
+        # El turno pasa a la IA.
+        self.ai_turn_pending = True
+        self.window.enemy_board.set_enabled(False)
+
+        if attack_result == HitResult.HIT:
+            self.window.update_status(
+                f"¡Impacto en {chr(ord('A') + row)}{col + 1}! "
+                f"La IA está preparando su turno..."
+            )
+        else:
+            self.window.update_status(
+                f"Agua en {chr(ord('A') + row)}{col + 1}. "
+                f"La IA está preparando su turno..."
+            )
+
+        # Esperar medio segundo antes de que responda la IA.
+        QTimer.singleShot(
+            500,
+            self.ai_make_move
+        )
+
+    def ai_make_move(self):
+        """Realiza el turno de la IA contra el jugador humano."""
+
+        # Comprobar que la partida siga activa.
+        if not self.human_game_active:
+            return
+
+        # La IA analiza el tablero del jugador humano.
+        attack_coordinates = self.ai_player.make_move(
+            self.human_board.get_matrix_board()
+        )
+
+        row, col = attack_coordinates
+
+        # La IA realiza su ataque.
+        attack_result = self.human_board.take_move(
+            attack_coordinates
+        )
+
+        # Actualizar visualmente el tablero humano.
+        self.render_human_board()
+
+        # Si la IA destruyó todos los barcos humanos,
+        # la IA gana.
+        if attack_result == HitResult.DEFEAT:
+            self.human_game_active = False
+            self.ai_turn_pending = False
+            self.window.enemy_board.set_enabled(False)
+
+            self.window.update_status(
+                "La IA destruyó toda tu flota."
+            )
+
+            self.window.show_winner(
+                f"IA ({self.window.combo_b.currentText()})"
+            )
+            return
+
+        # Regresar el turno al jugador humano.
+        self.ai_turn_pending = False
+        self.window.enemy_board.set_enabled(True)
+
+        coordenada_texto = f"{chr(ord('A') + row)}{col + 1}"
+
+        if attack_result == HitResult.HIT:
+            self.window.update_status(
+                f"La IA atacó {coordenada_texto}: "
+                f"¡impacto! Es tu turno."
+            )
+        else:
+            self.window.update_status(
+                f"La IA atacó {coordenada_texto}: "
+                f"agua. Es tu turno."
+            )
+
+    def render_human_board(self):
+        """Muestra el tablero y los barcos del jugador humano."""
+
+        # Mostrar primero todos los barcos humanos.
+        for ship in self.human_fleet:
+            for row, col in ship.get_boxes():
+                self.window.own_board.show_ship(
+                    row,
+                    col
+                )
+
+        # Mostrar los ataques que ya recibió el jugador.
+        board_matrix = self.human_board.get_matrix_board()
+
+        for x in range(10):
+            for y in range(10):
+                estado = board_matrix[x][y]
+
+                if estado == 'X':
+                    self.window.own_board.mark_miss(
+                        x,
+                        y
+                    )
+                elif estado == 'O':
+                    self.window.own_board.mark_hit(
+                        x,
+                        y
+                    )
+                elif estado == 'H':
+                    self.window.own_board.mark_sunk(
+                        x,
+                        y
+                    )
+
+    def render_human_enemy_board(self):
+        """Muestra solamente los resultados de los ataques humanos."""
+
+        board_matrix = self.ai_player.get_matrix_board()
+
+        for x in range(10):
+            for y in range(10):
+                estado = board_matrix[x][y]
+
+                if estado == 'X':
+                    self.window.enemy_board.mark_miss(
+                        x,
+                        y
+                    )
+                elif estado == 'O':
+                    self.window.enemy_board.mark_hit(
+                        x,
+                        y
+                    )
+                elif estado == 'H':
+                    self.window.enemy_board.mark_sunk(
+                        x,
+                        y
+                    )
 
     def render_boards(self):
         """Lee las matrices en memoria y las traduce a la interfaz gráfica."""
