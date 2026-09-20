@@ -9,10 +9,18 @@ import sys
 # PySide6 se encarga de la interfaz grafica.
 # sys se utiliza para iniciar/cerrar correctamente la aplicacion.
 
+########################################################################################################################################
 
-# ============================================================
-# TABLERO VISUAL
-# ============================================================
+#PASOS PARA EJECUTAR LA GUI;
+
+## 1. cambiar a cd IA-2027_1-Lab-1
+## 2. PARA VER LA GUI NECESARIO EJECUTAR LA INSTRUCCION source .venv/bin/activate en la terminal antes de ejecutar el script.
+## 3. python -m pip install -r requirements.txt
+## 4. python src/gui/gui.py
+
+########################################################################################################################################
+
+                            #######TABLERO VISUAL#######
 class BoardWidget(QWidget):
 
     # Esta señal avisa qué casilla fue presionada.
@@ -22,13 +30,11 @@ class BoardWidget(QWidget):
     def __init__(self, interactive=False):
         super().__init__()
 
-        # Indica si se pueden presionar las casillas.
+    # Indica si se pueden presionar las casillas.
         self.interactive = interactive
 
-        # Aquí guardamos los 100 botones del tablero.
-        # Ejemplo:
-        # self.cells[0][0] = A1
-        # self.cells[1][0] = B1
+     # Aquí guardamos los 100 botones del tablero.
+      #Ejemplo de acceso: self.cells[0][0] es la casilla A1, self.cells[9][9] es la casilla J10.
         self.cells = []
 
         layout = QGridLayout()
@@ -99,16 +105,16 @@ class BoardWidget(QWidget):
             # Guardamos toda la fila.
             self.cells.append(row_cells)
 
-    # ========================================================
-    # CUANDO SE PRESIONA UNA CASILLA
-    # ========================================================
+   
+        ##### CUANDO SE PRESIONA UNA CASILLA #########
+
     def on_cell_clicked(self, row, col):
 
         self.cell_clicked.emit(row, col)
 
-    # ========================================================
-    # MOSTRAR UN BARCO
-    # ========================================================
+    
+                ###### MOSTRAR UN BARCO #########
+
     def show_ship(self, row, col):
 
         cell = self.cells[row][col]
@@ -119,9 +125,9 @@ class BoardWidget(QWidget):
             "background-color: gray;"
         )
 
-    # ========================================================
-    # MOSTRAR IMPACTO
-    # ========================================================
+  
+                ####### MOSTRAR IMPACTO ########
+   
     def mark_hit(self, row, col):
 
         cell = self.cells[row][col]
@@ -134,9 +140,9 @@ class BoardWidget(QWidget):
             "font-weight: bold;"
         )
 
-    # ========================================================
-    # MOSTRAR DISPARO FALLIDO
-    # ========================================================
+
+         ###### MOSTRAR DISPARO FALLIDO ########
+     
     def mark_miss(self, row, col):
 
         cell = self.cells[row][col]
@@ -147,9 +153,8 @@ class BoardWidget(QWidget):
             "background-color: lightblue;"
         )
 
-    # ========================================================
-    # MOSTRAR BARCO HUNDIDO
-    # ========================================================
+             ###### MOSTRAR BARCO HUNDIDO #######
+
     def mark_sunk(self, row, col):
 
         cell = self.cells[row][col]
@@ -162,9 +167,9 @@ class BoardWidget(QWidget):
             "font-weight: bold;"
         )
 
-    # ========================================================
-    # LIMPIAR TABLERO
-    # ========================================================
+  
+         #### LIMPIAR TABLERO #####
+ 
     def reset_board(self):
 
         for row in range(10):
@@ -179,9 +184,8 @@ class BoardWidget(QWidget):
                 # Regresa al estado inicial.
                 cell.setEnabled(self.interactive)
 
-    # ========================================================
-    # ACTIVAR O DESACTIVAR TABLERO
-    # ========================================================
+         ###### ACTIVAR O DESACTIVAR TABLERO #######
+
     def set_enabled(self, enabled):
 
         for row in range(10):
@@ -191,9 +195,9 @@ class BoardWidget(QWidget):
                 self.cells[row][col].setEnabled(enabled)
 
 
-# ============================================================
-# VENTANA PRINCIPAL
-# ============================================================
+
+                ####### VENTANA PRINCIPAL ########
+
 class MainWindow(QWidget):
 
     def __init__(self):
@@ -234,9 +238,9 @@ class MainWindow(QWidget):
         # ----------------------------------------------------
         boards_layout = QHBoxLayout()
 
-        # ==============================
-        # TABLERO PROPIO
-        # ==============================
+    
+        ######### TABLERO JUGADOR PERSONA #########
+       
         own_layout = QVBoxLayout()
 
         own_title = QLabel(
@@ -260,9 +264,9 @@ class MainWindow(QWidget):
             self.own_board
         )
 
-        # ==============================
-        # TABLERO ENEMIGO
-        # ==============================
+   
+         ####### TABLERO ENEMIGO o IA #########
+      
         enemy_layout = QVBoxLayout()
 
         enemy_title = QLabel(
@@ -342,9 +346,8 @@ class MainWindow(QWidget):
             self.enemy_cell_clicked
         )
 
-    # ========================================================
-    # CUANDO SE PRESIONA TABLERO ENEMIGO
-    # ========================================================
+    #### ACCIONES CUANDO SE PRESIONA EL TABLERO ENEMIGO ####
+  
     def enemy_cell_clicked(self, row, col):
 
         # Convertimos:
@@ -364,14 +367,10 @@ class MainWindow(QWidget):
             f"{letter}{number}"
         )
 
-        # IMPORTANTE:
-        # Aquí NO decidimos si fue agua o impacto.
-        #
-        # Eso después vendrá desde gamelogic.
 
-    # ========================================================
-    # REINICIAR INTERFAZ
-    # ========================================================
+             ###### REINICIAR LA GUI ######
+  
+
     def restart_game(self):
 
         self.own_board.reset_board()
@@ -385,18 +384,18 @@ class MainWindow(QWidget):
         # Después aquí también se llamará
         # al reinicio de Game.
 
-    # ========================================================
-    # CAMBIAR TEXTO DE ESTADO
-    # ========================================================
+  
+            ###### CAMBIAR TEXTO DE ESTADO ######
+   
     def update_status(self, message):
 
         self.status_label.setText(
             message
         )
 
-    # ========================================================
-    # MOSTRAR GANADOR
-    # ========================================================
+
+            ###### MOSTRAR GANADOR ######
+
     def show_winner(self, winner):
 
         QMessageBox.information(
@@ -411,9 +410,8 @@ class MainWindow(QWidget):
         self.enemy_board.set_enabled(False)
 
 
-# ============================================================
-# EJECUTAR APLICACIÓN
-# ============================================================
+                ##### EJECUTAR APLICACIÓN #####
+
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
