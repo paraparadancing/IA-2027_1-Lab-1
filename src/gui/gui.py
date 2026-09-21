@@ -319,15 +319,9 @@ class MainWindow(QWidget):
         # ----------------------------------------------------
         boards_layout = QHBoxLayout()
 
-<<<<<<< HEAD
-    
-        ######### TABLERO JUGADOR PERSONA #########
-       
-=======
         # ==============================
         # TABLERO PROPIO (Player A)
         # ==============================
->>>>>>> b12d0a4f3a5c06762249ae414adfd12261074255
         own_layout = QVBoxLayout()
 
         own_title = QLabel(
@@ -351,15 +345,9 @@ class MainWindow(QWidget):
             self.own_board
         )
 
-<<<<<<< HEAD
-   
-         ####### TABLERO ENEMIGO o IA #########
-      
-=======
         # ==============================
         # TABLERO ENEMIGO (Player B)
         # ==============================
->>>>>>> b12d0a4f3a5c06762249ae414adfd12261074255
         enemy_layout = QVBoxLayout()
 
         enemy_title = QLabel(
