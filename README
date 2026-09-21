@@ -1,1 +1,12 @@
-Demostración de agentes IA para el juego Battleship (WIP)
+Demostración de agentes IA para el juego Battleship.
+
+# Requisitos
+- Python relativamente reciente.
+- Tener un entorno virtual de nombre `venv` en la carpeta del repositorio.
+
+# Ejecución
+Corra el script `Battleship.sh` desde terminal en sistemas tipo UNIX. De otro modo:
+1. Cree un entorno virtual dentro del directorio principal de nombre con el comando `python3 -m venv venv`
+2. Active el entorno virtual con el comando `source venv/bin/activate`
+3. Instale los módulos requeridos con el comando `python3 -m pip install -r requirements.txt`
+4. Corra el programa con el comando `python3 src/main.py`
